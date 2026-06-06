@@ -1,0 +1,35 @@
+# Type-equivalence map (LLD v1.2 §5.4) — used by gap engine G3.
+#
+# Canonical type -> source tokens. Tokens are matched case-insensitively
+# AFTER trim(). Seeded ONLY from values observed in the sample workbooks
+# (XS:integer, XS:string, String, Object). Extend as real production types
+# appear. Tokens not found here are flagged as a data-quality item and the
+# comparison is marked "indeterminate" — never silently treated as a match.
+
+STRING:
+  v1: ["xs:string"]
+  v2: ["string"]
+
+INTEGER:
+  v1: ["xs:integer", "xs:int"]
+  v2: ["integer", "number"]
+
+OBJECT:        # structural / complex nodes
+  v1: []
+  v2: ["object"]
+
+DECIMAL:
+  v1: ["xs:decimal"]
+  v2: ["number", "decimal"]
+
+BOOLEAN:
+  v1: ["xs:boolean"]
+  v2: ["boolean"]
+
+DATE:
+  v1: ["xs:date"]
+  v2: ["date"]
+
+DATETIME:
+  v1: ["xs:datetime"]
+  v2: ["datetime", "date-time"]
