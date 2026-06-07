@@ -30,6 +30,21 @@ interface Column {
 
 const opts = (xs: string[]) => xs.map((x) => ({ value: x, label: x }))
 
+// Send the smaller wire payload: a short include list, or — when "Select All"
+// minus a few is chosen — a short exclude list. Selecting everything (or nothing)
+// applies no filter. Keeps the query string small at ~800–2000 options.
+function multiFilter(sel: string[], all?: string[]): { inc?: string[]; exc?: string[] } {
+  if (sel.length === 0) return {}
+  if (all && all.length > 0) {
+    if (sel.length >= all.length) return {} // all selected = no filter
+    if (sel.length > all.length / 2) {
+      const picked = new Set(sel)
+      return { exc: all.filter((o) => !picked.has(o)) }
+    }
+  }
+  return { inc: sel }
+}
+
 const YESNO = [{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }]
 
 const COLUMNS: Column[] = [
@@ -84,11 +99,15 @@ export default function DataGrid({
     return a
   }, [debounced])
 
+  const isMulti = multiFilter(isSel, facets.data?.is_numbers)
+  const pathMulti = multiFilter(pathSel, facets.data?.paths)
   const params: GapsParams = {
     ...active,
     type: type ?? active.type,
-    is_in: isSel.length ? isSel : undefined,
-    path_in: pathSel.length ? pathSel : undefined,
+    is_in: isMulti.inc,
+    path_in: pathMulti.inc,
+    is_not_in: isMulti.exc,
+    path_not_in: pathMulti.exc,
     search: search || undefined,
     sort,
     page,

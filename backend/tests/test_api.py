@@ -95,6 +95,13 @@ def test_multiselect_is_in(client):
     assert isns == {"IS1", "IS3"}
 
 
+def test_multiselect_is_not_in(client):
+    # "Select All" minus IS2/IS4 -> exclusion list keeps IS1/IS3
+    r = client.get("/api/gaps", params=[("type", "G1_COVERAGE"), ("is_not_in", "IS2"), ("is_not_in", "IS4")])
+    isns = {row["is_number"] for row in r.json()["rows"]}
+    assert isns == {"IS1", "IS3"}
+
+
 def test_multiselect_path_in(client):
     p = "Message > LegalEntity > LEDetails"
     r = client.get("/api/gaps", params=[("type", "G1_COVERAGE"), ("path_in", p)])

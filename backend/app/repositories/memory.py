@@ -125,6 +125,11 @@ class InMemoryRepository:
             return False
         if q.path_in and g.v1_path not in q.path_in:
             return False
+        # multi-select (none-of) — Select-All with a few deselected
+        if q.is_not_in and g.is_number in q.is_not_in:
+            return False
+        if q.path_not_in and g.v1_path in q.path_not_in:
+            return False
         # contains column filters
         if not contains(q.is_number, g.is_number):
             return False

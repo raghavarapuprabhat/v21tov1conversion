@@ -20,6 +20,8 @@ class GapQuery(BaseModel):
     is_number: Optional[str] = None      # contains (legacy single IS)
     is_in: Optional[list[str]] = None    # any-of (multi-select column filter: IS)
     path_in: Optional[list[str]] = None  # any-of (multi-select column filter: Path)
+    is_not_in: Optional[list[str]] = None    # none-of (Select-All minus a few: IS)
+    path_not_in: Optional[list[str]] = None  # none-of (Select-All minus a few: Path)
     v1: Optional[str] = None             # contains (column filter: V1)
     v2: Optional[str] = None             # contains (column filter: V2.1)
     detail: Optional[str] = None         # contains (column filter: Detail)

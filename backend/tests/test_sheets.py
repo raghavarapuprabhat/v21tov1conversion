@@ -45,6 +45,29 @@ def test_sheet_v2_as_is(client):
     assert "ENtity" in joined
 
 
+def test_fetch_entire_v1_row(client):
+    grid = client.get("/api/sheets/v1").json()
+    row_no = grid["rows"][1]["__row"]
+    r = client.get(f"/api/sheets/v1/row/{row_no}")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["row"]["__row"] == row_no
+    assert body["columns"] == grid["columns"]
+    assert body["row"] == grid["rows"][1]          # same as the full-grid row
+
+
+def test_fetch_entire_v2_row(client):
+    grid = client.get("/api/sheets/v2").json()
+    row_no = grid["rows"][0]["__row"]
+    r = client.get(f"/api/sheets/v2/row/{row_no}")
+    assert r.status_code == 200
+    assert "CC_V1_Mapping Entity" in r.json()["columns"]
+
+
+def test_fetch_missing_row_is_404(client):
+    assert client.get("/api/sheets/v1/row/99999").status_code == 404
+
+
 def test_v2_download_applies_edits(client):
     g = client.get("/api/sheets/v2").json()
     cols = g["columns"]

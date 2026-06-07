@@ -4,6 +4,7 @@ import { useDisplayName } from '../state/displayName'
 import type { CommentNode, Gap, GapStatus } from '../types'
 import { ContextChip, GapTypeBadge, StatusChip } from './chips'
 import FetchV2ByDDModal from './FetchV2ByDDModal'
+import FetchRowModal from './FetchRowModal'
 
 const STATUSES: GapStatus[] = ['Open', 'Accepted', 'Not applicable']
 
@@ -77,6 +78,11 @@ export default function ConversationPanel({ gap, onClose }: { gap: Gap; onClose:
   const addComment = useAddComment()
   const [body, setBody] = useState('')
   const [showV2, setShowV2] = useState(false)
+  const [showV1Row, setShowV1Row] = useState(false)
+  const [showV2Row, setShowV2Row] = useState(false)
+
+  const v1Row = gap.v1_ref?.row
+  const v2Row = gap.v2_ref?.row
 
   const postRoot = () => {
     if (body.trim()) {
@@ -108,6 +114,26 @@ export default function ConversationPanel({ gap, onClose }: { gap: Gap; onClose:
         <div className="grid grid-cols-2 gap-3 text-sm">
           <Field label="V1" value={gap.v1_value} />
           <Field label="V2.1" value={gap.v2_value} />
+        </div>
+
+        {/* fetch entire source rows */}
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setShowV1Row(true)}
+            disabled={v1Row == null}
+            title={v1Row == null ? 'No V1 source row for this gap' : `V1 sheet row ${v1Row}`}
+            className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+          >
+            Fetch entire V1 row
+          </button>
+          <button
+            onClick={() => setShowV2Row(true)}
+            disabled={v2Row == null}
+            title={v2Row == null ? 'No V2.1 source row for this gap' : `V2.1 sheet row ${v2Row}`}
+            className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+          >
+            Fetch entire V2.1 row
+          </button>
         </div>
 
         {/* status + fetch v2 */}
@@ -198,6 +224,12 @@ export default function ConversationPanel({ gap, onClose }: { gap: Gap; onClose:
       </footer>
 
       {showV2 && gap.dd_ref && <FetchV2ByDDModal dd={gap.dd_ref} onClose={() => setShowV2(false)} />}
+      {showV1Row && v1Row != null && (
+        <FetchRowModal which="v1" row={v1Row} onClose={() => setShowV1Row(false)} />
+      )}
+      {showV2Row && v2Row != null && (
+        <FetchRowModal which="v2" row={v2Row} onClose={() => setShowV2Row(false)} />
+      )}
     </aside>
   )
 }

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import io
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from openpyxl import Workbook, load_workbook
 
@@ -29,7 +29,8 @@ def _cell_text(v: Any) -> str:
     return "" if v is None else str(v)
 
 
-def _read_grid(path: str | Path, expected: set[str]) -> dict:
+def _open(path: str | Path, expected: set[str]):
+    """Open the workbook and locate the header row, or raise IngestionError."""
     p = Path(path)
     if not p.exists():
         raise IngestionError(f"workbook not found: {p}")
@@ -40,7 +41,10 @@ def _read_grid(path: str | Path, expected: set[str]) -> dict:
         raise IngestionError(
             f"header row not found in {p.name} (matched {hits}/{len(expected)})"
         )
+    return ws, hrow
 
+
+def _columns(ws, hrow: int) -> list[str]:
     ncols = ws.max_column or 0
     columns: list[str] = []
     seen: dict[str, int] = {}
@@ -55,7 +59,13 @@ def _read_grid(path: str | Path, expected: set[str]) -> dict:
         else:
             seen[label] = 0
         columns.append(label)
+    return columns
 
+
+def _read_grid(path: str | Path, expected: set[str]) -> dict:
+    ws, hrow = _open(path, expected)
+    columns = _columns(ws, hrow)
+    ncols = len(columns)
     rows: list[dict] = []
     for r in range(hrow + 1, (ws.max_row or hrow) + 1):
         cells: dict[str, Any] = {}
@@ -79,6 +89,33 @@ def read_v1_grid(path: str | Path) -> dict:
 
 def read_v2_grid(path: str | Path) -> dict:
     return _read_grid(path, V2_HEADERS)
+
+
+def _read_row(path: str | Path, expected: set[str], row_no: int) -> Optional[dict]:
+    """Return a single raw row (all columns, as is) by its source Excel row number."""
+    ws, hrow = _open(path, expected)
+    if row_no <= hrow or row_no > (ws.max_row or hrow):
+        return None
+    columns = _columns(ws, hrow)
+    cells: dict = {}
+    blank = True
+    for i, col in enumerate(columns):
+        val = _cell_text(ws.cell(row=row_no, column=i + 1).value)
+        if val.strip():
+            blank = False
+        cells[col] = val
+    if blank:
+        return None
+    cells[ROW_KEY] = row_no
+    return {"sheet": ws.title, "columns": columns, "row": cells}
+
+
+def read_v1_row(path: str | Path, row_no: int) -> Optional[dict]:
+    return _read_row(path, V1_HEADERS, row_no)
+
+
+def read_v2_row(path: str | Path, row_no: int) -> Optional[dict]:
+    return _read_row(path, V2_HEADERS, row_no)
 
 
 def write_grid_xlsx(columns: list[str], rows: list[dict], sheet_title: str = "Sheet1") -> bytes:

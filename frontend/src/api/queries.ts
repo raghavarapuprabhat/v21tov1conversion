@@ -44,6 +44,19 @@ export interface SheetGrid {
 export const useSheet = (which: 'v1' | 'v2') =>
   useQuery({ queryKey: ['sheet', which], queryFn: () => apiGet<SheetGrid>(`/sheets/${which}`) })
 
+export interface SheetRow {
+  sheet: string
+  columns: string[]
+  row: Record<string, string>
+}
+
+export const useSheetRow = (which: 'v1' | 'v2', row: number | null | undefined) =>
+  useQuery({
+    queryKey: ['sheetrow', which, row],
+    queryFn: () => apiGet<SheetRow>(`/sheets/${which}/row/${row}`),
+    enabled: row != null,
+  })
+
 export const useFacets = (type?: string) =>
   useQuery({
     queryKey: ['facets', type],
@@ -63,6 +76,8 @@ export interface GapsParams {
   is?: string
   is_in?: string[]
   path_in?: string[]
+  is_not_in?: string[]
+  path_not_in?: string[]
   v1?: string
   v2?: string
   detail?: string

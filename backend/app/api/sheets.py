@@ -15,7 +15,13 @@ from pydantic import BaseModel
 
 from app.config import settings
 from app.ingestion.excel_loader import IngestionError
-from app.ingestion.raw_sheet import read_v1_grid, read_v2_grid, write_grid_xlsx
+from app.ingestion.raw_sheet import (
+    read_v1_grid,
+    read_v1_row,
+    read_v2_grid,
+    read_v2_row,
+    write_grid_xlsx,
+)
 
 router = APIRouter(tags=["sheets"])
 
@@ -36,6 +42,28 @@ def sheet_v2() -> dict:
         return read_v2_grid(settings.V2_PATH)
     except IngestionError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
+
+
+@router.get("/sheets/v1/row/{row}")
+def sheet_v1_row(row: int) -> dict:
+    try:
+        result = read_v1_row(settings.V1_PATH, row)
+    except IngestionError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"V1 row {row} not found")
+    return result
+
+
+@router.get("/sheets/v2/row/{row}")
+def sheet_v2_row(row: int) -> dict:
+    try:
+        result = read_v2_row(settings.V2_PATH, row)
+    except IngestionError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"V2.1 row {row} not found")
+    return result
 
 
 class GridPayload(BaseModel):
