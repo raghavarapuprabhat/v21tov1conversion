@@ -24,7 +24,7 @@ export default function GapCard({ s, onClick }: { s: GapSummary; onClick: () => 
         </div>
       ) : (
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {Object.entries(s.by_severity).map(([k, v]) => (
+          {Object.entries(s.by_status).map(([k, v]) => (
             <span key={k} className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-600">
               {k}: {v}
             </span>

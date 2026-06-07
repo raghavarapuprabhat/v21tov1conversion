@@ -3,11 +3,10 @@ import { useBulkStatus, useFacets, useGaps, type GapsParams } from '../api/queri
 import { useDisplayName } from '../state/displayName'
 import type { Gap, GapStatus, GapType } from '../types'
 import { GAP_CODE } from '../types'
-import { ContextChip, GapTypeBadge, SeverityChip, StatusChip } from './chips'
+import { ContextChip, GapTypeBadge, StatusChip } from './chips'
 import MultiSelect from './MultiSelect'
 
 const STATUSES = ['Open', 'Accepted', 'Not applicable']
-const SEVERITIES = ['Critical', 'High', 'Medium', 'Low']
 const CONTEXTS = ['Entity', 'RP_IND', 'RP_ORG']
 const GAP_TYPES: GapType[] = [
   'G1_COVERAGE', 'G2_OCCURRENCE', 'G3_DATATYPE', 'G4_MANDATORY',
@@ -24,23 +23,26 @@ interface Column {
   key: string
   label: string
   hideable: boolean
+  g1Only?: boolean          // only shown on the G1 coverage table
   filter?: ColFilter
   render: (g: Gap) => React.ReactNode
 }
 
 const opts = (xs: string[]) => xs.map((x) => ({ value: x, label: x }))
 
+const YESNO = [{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }]
+
 const COLUMNS: Column[] = [
-  { key: 'severity', label: 'Severity', hideable: false, filter: { kind: 'select', param: 'severity', options: opts(SEVERITIES) }, render: (g) => <SeverityChip severity={g.severity} /> },
   { key: 'gap_type', label: 'Type', hideable: true, filter: { kind: 'select', param: 'type', options: GAP_TYPES.map((t) => ({ value: t, label: GAP_CODE[t] })) }, render: (g) => <GapTypeBadge type={g.gap_type} /> },
   { key: 'is_number', label: 'IS', hideable: false, filter: { kind: 'multi', param: 'is_in' }, render: (g) => <span className="font-medium text-slate-800">{g.is_number ?? '—'}</span> },
   { key: 'path', label: 'Path', hideable: true, filter: { kind: 'multi', param: 'path_in' }, render: (g) => <Trunc v={g.v1_path} wide /> },
   { key: 'context', label: 'Context', hideable: true, filter: { kind: 'select', param: 'context', options: opts(CONTEXTS) }, render: (g) => (g.mapping_context ? <ContextChip context={g.mapping_context} /> : <span className="text-slate-300">—</span>) },
   { key: 'v1_value', label: 'V1', hideable: true, filter: { kind: 'text', param: 'v1' }, render: (g) => <Trunc v={g.v1_value} /> },
+  { key: 'nullable', label: 'Nullable', g1Only: true, hideable: true, filter: { kind: 'select', param: 'nullable', options: YESNO }, render: (g) => <YesNo v={g.nullable} /> },
   { key: 'v2_value', label: 'V2.1', hideable: true, filter: { kind: 'text', param: 'v2' }, render: (g) => <Trunc v={g.v2_value} /> },
   { key: 'detail', label: 'Detail', hideable: true, filter: { kind: 'text', param: 'detail' }, render: (g) => <Trunc v={g.detail} wide /> },
   { key: 'dd_ref', label: 'DD', hideable: true, filter: { kind: 'text', param: 'dd' }, render: (g) => <span className="text-slate-500">{g.dd_ref ?? '—'}</span> },
-  { key: 'dd_in_v2', label: 'DD in V2', hideable: true, filter: { kind: 'select', param: 'dd_in_v2', options: [{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }] }, render: (g) => <DdInV2 ok={g.dd_in_v2} /> },
+  { key: 'dd_in_v2', label: 'DD in V2', hideable: true, filter: { kind: 'select', param: 'dd_in_v2', options: YESNO }, render: (g) => <DdInV2 ok={g.dd_in_v2} /> },
   { key: 'status', label: 'Status', hideable: false, filter: { kind: 'select', param: 'status', options: opts(STATUSES) }, render: (g) => <StatusChip status={g.status} /> },
 ]
 
@@ -62,7 +64,7 @@ export default function DataGrid({
   const [debounced, setDebounced] = useState<Record<string, string>>({})
   const [isSel, setIsSel] = useState<string[]>([])
   const [pathSel, setPathSel] = useState<string[]>([])
-  const [sort, setSort] = useState('severity')
+  const [sort, setSort] = useState('is_number')
   const [page, setPage] = useState(1)
   const [hidden, setHidden] = useState<Set<string>>(new Set())
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -95,7 +97,11 @@ export default function DataGrid({
   const gaps = useGaps(params)
   const bulk = useBulkStatus()
 
-  const cols = useMemo(() => COLUMNS.filter((c) => !hidden.has(c.key)), [hidden])
+  const isG1 = type === 'G1_COVERAGE'
+  const cols = useMemo(
+    () => COLUMNS.filter((c) => !hidden.has(c.key) && (!c.g1Only || isG1)),
+    [hidden, isG1],
+  )
   const rows = gaps.data?.rows ?? []
   const total = gaps.data?.total ?? 0
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE))
@@ -199,7 +205,7 @@ export default function DataGrid({
           </button>
           {colsOpen && (
             <div className="absolute right-0 z-20 mt-1 w-44 rounded-lg border border-slate-200 bg-white p-2 shadow-lg">
-              {COLUMNS.filter((c) => c.hideable).map((c) => (
+              {COLUMNS.filter((c) => c.hideable && (!c.g1Only || isG1)).map((c) => (
                 <label key={c.key} className="flex items-center gap-2 rounded px-2 py-1 text-sm hover:bg-slate-50">
                   <input
                     type="checkbox"
@@ -285,6 +291,19 @@ export default function DataGrid({
         </div>
       </div>
     </div>
+  )
+}
+
+function YesNo({ v }: { v?: boolean | null }) {
+  if (v == null) return <span className="text-slate-300">—</span>
+  return v ? (
+    <span className="inline-flex items-center rounded-full bg-sky-50 px-2 py-0.5 text-xs font-medium text-sky-700 ring-1 ring-sky-200" title="Nullable = true">
+      Yes
+    </span>
+  ) : (
+    <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 ring-1 ring-slate-200" title="Nullable = false (mandatory)">
+      No
+    </span>
   )
 }
 

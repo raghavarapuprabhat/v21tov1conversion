@@ -1,4 +1,4 @@
-import type { GapStatus, GapType, MappingContext, Severity } from '../types'
+import type { GapStatus, GapType, MappingContext } from '../types'
 import { GAP_CODE, GAP_LABELS } from '../types'
 
 function Pill({ text, cls, title }: { text: string; cls: string; title?: string }) {
@@ -11,17 +11,6 @@ function Pill({ text, cls, title }: { text: string; cls: string; title?: string 
     </span>
   )
 }
-
-const SEV: Record<Severity, string> = {
-  Critical: 'bg-rose-50 text-rose-700 ring-rose-200',
-  High: 'bg-orange-50 text-orange-700 ring-orange-200',
-  Medium: 'bg-amber-50 text-amber-700 ring-amber-200',
-  Low: 'bg-slate-100 text-slate-600 ring-slate-200',
-}
-
-export const SeverityChip = ({ severity }: { severity: Severity }) => (
-  <Pill text={severity} cls={SEV[severity]} />
-)
 
 const STATUS: Record<GapStatus, string> = {
   Open: 'bg-sky-50 text-sky-700 ring-sky-200',

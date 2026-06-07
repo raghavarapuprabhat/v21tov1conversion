@@ -70,6 +70,7 @@ def run_g1(idx: LinkIndex, _typemap: TypeMap | None = None) -> list[Gap]:
                    "parent_root_min_occurs_1": parent_min_1},
             severity=sev.coverage_severity(nullable_false, parent_min_1),
             root_node=f.path[0] if f.path else None, dd_ref=f.dd_ref,
+            nullable=f.nullable,
             dd_in_v2=bool(f.dd_ref and f.dd_ref in v2_dds),
         ))
     return gaps

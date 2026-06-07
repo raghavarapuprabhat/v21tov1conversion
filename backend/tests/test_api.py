@@ -69,6 +69,19 @@ def test_column_filters(client):
     assert r3.json()["total"] == 1
 
 
+def test_g1_nullable_field_and_filter(client):
+    rows = client.get("/api/gaps", params={"type": "G1_COVERAGE"}).json()["rows"]
+    # every G1 coverage gap carries the V1 Nullable value
+    assert all("nullable" in r for r in rows)
+    # 3 of 4 are Nullable=False (matches the funnel's nullable_false metric)
+    not_null = client.get("/api/gaps", params={"type": "G1_COVERAGE", "nullable": "false"})
+    assert not_null.json()["total"] == 3
+    assert all(r["nullable"] is False for r in not_null.json()["rows"])
+    nullable = client.get("/api/gaps", params={"type": "G1_COVERAGE", "nullable": "true"})
+    assert nullable.json()["total"] == 1
+    assert nullable.json()["rows"][0]["is_number"] == "IS4"
+
+
 def test_facets(client):
     f = client.get("/api/facets", params={"type": "G1_COVERAGE"}).json()
     assert set(f["is_numbers"]) == {"IS1", "IS2", "IS3", "IS4"}

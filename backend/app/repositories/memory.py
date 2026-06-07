@@ -116,6 +116,8 @@ class InMemoryRepository:
             return False
         if q.dd_in_v2 is not None and g.dd_in_v2 != q.dd_in_v2:
             return False
+        if q.nullable is not None and g.nullable != q.nullable:
+            return False
         if q.root_node and g.root_node != q.root_node:
             return False
         # multi-select (any-of) column filters

@@ -25,6 +25,7 @@ class GapQuery(BaseModel):
     detail: Optional[str] = None         # contains (column filter: Detail)
     dd: Optional[str] = None             # contains (column filter: DD)
     dd_in_v2: Optional[bool] = None      # exact (column filter: DD in V2)
+    nullable: Optional[bool] = None      # exact (column filter: Nullable, G1)
     root_node: Optional[str] = None
     search: Optional[str] = None         # global contains across fields
     sort: Optional[str] = None           # field name, '-' prefix = descending

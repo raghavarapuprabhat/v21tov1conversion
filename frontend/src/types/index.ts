@@ -2,7 +2,6 @@
 
 export type MappingContext = 'Entity' | 'RP_IND' | 'RP_ORG'
 export type GapStatus = 'Open' | 'Accepted' | 'Not applicable'
-export type Severity = 'Critical' | 'High' | 'Medium' | 'Low'
 
 export type GapType =
   | 'G1_COVERAGE'
@@ -33,9 +32,9 @@ export interface Gap {
   v2_value?: string | null
   detail: string
   flags: Record<string, unknown>
-  severity: Severity
   root_node?: string | null
   dd_ref?: string | null
+  nullable?: boolean | null
   dd_in_v2: boolean
   status: GapStatus
 }

@@ -13,8 +13,9 @@ from app.repositories.base import GapQuery, Repository
 
 router = APIRouter(tags=["export"])
 
-_COLUMNS = ["gap_id", "gap_type", "is_number", "v1_path", "mapping_context", "severity",
-            "status", "v1_value", "v2_value", "detail", "root_node", "dd_ref", "dd_in_v2"]
+_COLUMNS = ["gap_id", "gap_type", "is_number", "v1_path", "mapping_context",
+            "status", "v1_value", "v2_value", "detail", "root_node", "dd_ref",
+            "nullable", "dd_in_v2"]
 
 
 @router.get("/export")
@@ -31,6 +32,7 @@ def export_gaps(
     detail: Optional[str] = Query(None),
     dd: Optional[str] = Query(None),
     dd_in_v2: Optional[bool] = Query(None),
+    nullable: Optional[bool] = Query(None),
     root: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
     sort: Optional[str] = Query(None),
@@ -39,7 +41,7 @@ def export_gaps(
     q = GapQuery(gap_type=type, status=status, severity=severity, context=context,
                  is_number=is_number, is_in=is_in, path_in=path_in,
                  v1=v1, v2=v2, detail=detail, dd=dd, dd_in_v2=dd_in_v2,
-                 root_node=root, search=search, sort=sort,
+                 nullable=nullable, root_node=root, search=search, sort=sort,
                  page=1, page_size=1_000_000)
     rows = repo.query_gaps(q).rows
 
@@ -50,8 +52,8 @@ def export_gaps(
         d = g.model_dump()
         d["mapping_context"] = g.mapping_context.value if g.mapping_context else ""
         d["gap_type"] = g.gap_type.value
-        d["severity"] = g.severity.value
         d["status"] = g.status.value
+        d["nullable"] = "" if g.nullable is None else ("Yes" if g.nullable else "No")
         writer.writerow([d.get(c, "") for c in _COLUMNS])
 
     return StreamingResponse(

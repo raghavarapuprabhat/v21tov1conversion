@@ -59,7 +59,6 @@ export const useSummary = () =>
 export interface GapsParams {
   type?: string
   status?: string
-  severity?: string
   context?: string
   is?: string
   is_in?: string[]
@@ -69,6 +68,7 @@ export interface GapsParams {
   detail?: string
   dd?: string
   dd_in_v2?: string
+  nullable?: string
   root?: string
   search?: string
   sort?: string

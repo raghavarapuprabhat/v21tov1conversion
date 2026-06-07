@@ -64,6 +64,7 @@ def list_gaps(
     detail: Optional[str] = Query(None),
     dd: Optional[str] = Query(None),
     dd_in_v2: Optional[bool] = Query(None),
+    nullable: Optional[bool] = Query(None),
     root: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
     sort: Optional[str] = Query(None),
@@ -74,7 +75,7 @@ def list_gaps(
     q = GapQuery(gap_type=type, status=status, severity=severity, context=context,
                  is_number=is_number, is_in=is_in, path_in=path_in,
                  v1=v1, v2=v2, detail=detail, dd=dd, dd_in_v2=dd_in_v2,
-                 root_node=root, search=search, sort=sort,
+                 nullable=nullable, root_node=root, search=search, sort=sort,
                  page=page, page_size=page_size)
     return repo.query_gaps(q)
 

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useAddComment, useConversation, useHistory, useSetStatus } from '../api/queries'
 import { useDisplayName } from '../state/displayName'
 import type { CommentNode, Gap, GapStatus } from '../types'
-import { ContextChip, GapTypeBadge, SeverityChip, StatusChip } from './chips'
+import { ContextChip, GapTypeBadge, StatusChip } from './chips'
 import FetchV2ByDDModal from './FetchV2ByDDModal'
 
 const STATUSES: GapStatus[] = ['Open', 'Accepted', 'Not applicable']
@@ -93,7 +93,6 @@ export default function ConversationPanel({ gap, onClose }: { gap: Gap; onClose:
         <div>
           <div className="flex items-center gap-2">
             <GapTypeBadge type={gap.gap_type} />
-            <SeverityChip severity={gap.severity} />
             {gap.mapping_context && <ContextChip context={gap.mapping_context} />}
           </div>
           <h3 className="mt-2 text-sm font-semibold text-slate-900">

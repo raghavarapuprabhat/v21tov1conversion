@@ -49,5 +49,6 @@ class Gap(BaseModel):
     severity: Severity = Severity.MEDIUM
     root_node: Optional[str] = None
     dd_ref: Optional[str] = None
+    nullable: Optional[bool] = None      # V1 Nullable (surfaced on G1 coverage gaps)
     dd_in_v2: bool = False               # is this DD number present in the V2.1 sheet?
     status: GapStatus = GapStatus.OPEN
