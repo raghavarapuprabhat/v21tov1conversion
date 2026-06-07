@@ -1,11 +1,13 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useIngest, useSummary } from '../api/queries'
+import { useSummary } from '../api/queries'
 import GapCard from '../components/GapCard'
+import UploadModal from '../components/UploadModal'
 
 export default function LandingPage() {
   const summary = useSummary()
-  const ingest = useIngest()
   const navigate = useNavigate()
+  const [uploadOpen, setUploadOpen] = useState(false)
 
   const total = summary.data?.reduce((a, s) => a + s.total, 0) ?? 0
 
@@ -20,13 +22,14 @@ export default function LandingPage() {
           </p>
         </div>
         <button
-          onClick={() => ingest.mutate()}
-          disabled={ingest.isPending}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+          onClick={() => setUploadOpen(true)}
+          className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
         >
-          {ingest.isPending ? 'Re-ingesting…' : 'Re-ingest Excel'}
+          Upload Excel
         </button>
       </div>
+
+      {uploadOpen && <UploadModal onClose={() => setUploadOpen(false)} />}
 
       {summary.isError && (
         <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">

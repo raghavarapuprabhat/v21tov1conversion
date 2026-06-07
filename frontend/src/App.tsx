@@ -2,6 +2,7 @@ import { Routes, Route, NavLink } from 'react-router-dom'
 import LandingPage from './pages/LandingPage'
 import GapTablePage from './pages/GapTablePage'
 import TreePage from './pages/TreePage'
+import SheetPage from './pages/SheetPage'
 import { useHealth } from './api/queries'
 import { DisplayNameProvider, useDisplayName } from './state/displayName'
 import DisplayNamePrompt from './components/DisplayNamePrompt'
@@ -83,6 +84,8 @@ function Shell() {
               Gaps
             </NavItem>
             <NavItem to="/tree">V1 Tree</NavItem>
+            <NavItem to="/sheet/v1">V1 Sheet</NavItem>
+            <NavItem to="/sheet/v2">V2.1 Sheet</NavItem>
           </nav>
           <div className="ml-auto flex items-center gap-3">
             <Identity />
@@ -96,6 +99,8 @@ function Shell() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/gaps/:type" element={<GapTablePage />} />
           <Route path="/tree" element={<TreePage />} />
+          <Route path="/sheet/v1" element={<SheetPage which="v1" />} />
+          <Route path="/sheet/v2" element={<SheetPage which="v2" />} />
         </Routes>
       </main>
 

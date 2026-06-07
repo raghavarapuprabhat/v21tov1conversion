@@ -72,3 +72,40 @@ def test_g4_mandatory_mismatch(result):
     assert "Mandatory" in g.v1_value            # Nullable=False => Mandatory
     assert g.v2_value == "Optional"
     assert g.mapping_context.value == "Entity"
+
+
+def test_g7_cardinality_fires_on_scalar_to_array(result):
+    # V1 parent root max=1 (scalar) vs V2 max=unbounded (array) -> G7
+    g = _one(result.gaps, GapType.G7_CARDINALITY)
+    assert g.flags["array_v1"] is False and g.flags["array_v2"] is True
+    assert g.severity == Severity.HIGH
+
+
+def test_optional_engines_g6_g8_g9():
+    """G6 (DD mismatch), G8 (duplicate mapping), G9 (data quality) on a tiny set."""
+    from app.gaps.typemap import TypeMap
+    v1 = [
+        V1Field(node_kind="Root", path=["R"], min_occurs=1,
+                max_occurs=Occurs(value=1), source=SourceRef(sheet="t", row=1)),
+        V1Field(is_number="IS200", node_kind="Element", path=["R"], attribute="f",
+                xsd_type="xs:string", xsd_type_raw="XS:string", nullable=True,
+                dd_ref="DD200", source=SourceRef(sheet="t", row=2)),
+    ]
+    # two V2 rows map IS200 in the SAME context (Entity) -> G8; V2 dd differs -> G6
+    def v2row(dd):
+        return V2Field(map_entity="IS200", map_entity_raw="IS200", node_kind="Element",
+                       data_type="String", data_type_raw="String", dd_ref=dd, dd_ref_raw=dd,
+                       min_occurs=1, max_occurs=Occurs(value=1), mandatory_optional="Optional",
+                       full_path=f"[X].f.{dd}", source=SourceRef(sheet="t", row=2))
+    v2 = [v2row("DD999"), v2row("DD888")]
+
+    from app.ingestion.validate import DQFinding
+    findings = [DQFinding(code="SENTINEL_CASING", severity="low", sheet="t", row=4,
+                          message="Non-standard token", raw="Not APplicable")]
+
+    res = analyze(v1, v2, TypeMap.load(TYPEMAP), enable_optional=True, dq_findings=findings)
+    types = [g.gap_type for g in res.gaps]
+    assert GapType.G6_DD_MISMATCH in types       # V1 DD200 != V2 DD999/DD888
+    assert GapType.G8_DUP_MAPPING in types       # 2 rows, same IS+context
+    g9 = [g for g in res.gaps if g.gap_type == GapType.G9_DATA_QUALITY]
+    assert len(g9) == 1 and "SENTINEL_CASING" in g9[0].detail

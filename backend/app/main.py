@@ -14,7 +14,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
-from app.api import export, gaps, health, ingest, tree, v2lookup, views
+from app.api import export, gaps, health, ingest, sheets, tree, v2lookup, views
 from app.config import settings
 from app.deps import get_repo
 from app.services.bootstrap import reload_repository
@@ -52,6 +52,7 @@ app.include_router(tree.router, prefix="/api")
 app.include_router(v2lookup.router, prefix="/api")
 app.include_router(views.router, prefix="/api")
 app.include_router(export.router, prefix="/api")
+app.include_router(sheets.router, prefix="/api")
 
 
 @app.get("/", tags=["meta"])

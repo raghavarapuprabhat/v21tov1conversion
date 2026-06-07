@@ -4,6 +4,7 @@ uvicorn[standard]>=0.29
 pydantic>=2.6
 pydantic-settings>=2.2
 openpyxl>=3.1
+python-multipart>=0.0.9
 PyYAML>=6.0
 SQLAlchemy>=2.0
 

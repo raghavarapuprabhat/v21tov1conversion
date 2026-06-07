@@ -221,31 +221,37 @@ while i < len(elements):
 
     # mapped — choose a mismatch scenario
     scenario = random.choices(
-        ["clean", "type", "mo", "occ"], weights=[40, 20, 20, 20])[0]
+        ["clean", "type", "mo", "occ", "dd"], weights=[32, 18, 18, 18, 14])[0]
     derived_mo = "Mandatory" if not e["nullable"] else "Optional"
     data_type = e["v2match"]
     vmin, vmax = e["parent_min"], e["parent_max"]
     mo = derived_mo
-    repeating = vmax == "unbounded"
+    v2_dd = e["dd"]
 
     if scenario == "type":
         data_type = other_v2_type(e["xsd"])
     elif scenario == "mo":
         mo = "Optional" if derived_mo == "Mandatory" else "Mandatory"
     elif scenario == "occ":
-        # diverge from the parent root occurrence (often scalar<->array)
-        if vmax == "unbounded":
-            vmax = 1
-        else:
-            vmax = "unbounded"
+        # diverge from the parent root occurrence (often scalar<->array -> G2 + G7)
+        vmax = 1 if vmax == "unbounded" else "unbounded"
         vmin = 0 if e["parent_min"] == 1 else 1
-        repeating = vmax == "unbounded"
+    elif scenario == "dd":
+        v2_dd = f"DDX{random.randint(1000, 9999)}"   # differs from V1 -> G6
 
     context = random.choice(["Entity", "RP IND", "RP ORG"])
     ent, ind, org = map_columns(e["is"], context)
     v2_rows.append(make_v2_element(
-        e["family"], e["attr"], e["dd"], data_type, vmin, vmax, mo,
-        ent, ind, org, repeating))
+        e["family"], e["attr"], v2_dd, data_type, vmin, vmax, mo,
+        ent, ind, org, vmax == "unbounded"))
+
+    # duplicate mapping (G8): ~6% — a 2nd V2 row maps the SAME IS in the SAME context
+    if random.random() < 0.06:
+        ent2, ind2, org2 = map_columns(e["is"], context)
+        v2_rows.append(make_v2_element(
+            e["family"], e["attr"] + "Alt", e["dd"], e["v2match"],
+            e["parent_min"], e["parent_max"], derived_mo,
+            ent2, ind2, org2, e["parent_max"] == "unbounded"))
     i += 1
 
 # reverse orphans (G5): V2 maps to IS not present in V1
@@ -304,7 +310,7 @@ if "--analyze" in sys.argv:
 
     v1, v2, report = run_ingestion(OUT / "v1_mock.xlsx", OUT / "v2.1_mock.xlsx")
     tm = TypeMap.load(ROOT / "backend" / "config" / "type_equivalence.yaml")
-    res = analyze(v1, v2, tm, enable_optional=True)
+    res = analyze(v1, v2, tm, enable_optional=True, dq_findings=report.findings)
     print("\n--- ingestion ---")
     print(f"V1 fields={report.v1_rows}  V2 fields={report.v2_rows}  "
           f"IS={report.v1_is_numbers}  links={report.v2_mapping_links}  DQ={report.by_code}")

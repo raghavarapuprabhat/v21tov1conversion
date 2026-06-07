@@ -18,20 +18,25 @@ MANDATORY = {
     GapType.G4_MANDATORY: engines.run_g4,
 }
 
+# Optional engines that take (idx, typemap). G9 is handled separately because it
+# consumes the ingestion data-quality findings rather than the link index.
 OPTIONAL = {
     GapType.G5_REVERSE_ORPHAN: engines.run_g5,
-    # G6..G9 land in Phase 1.5
+    GapType.G6_DD_MISMATCH: engines.run_g6,
+    GapType.G7_CARDINALITY: engines.run_g7,
+    GapType.G8_DUP_MAPPING: engines.run_g8,
 }
 
 
 def run_all(idx: LinkIndex, typemap: Optional[TypeMap] = None,
-            enable_optional: bool = False) -> list[Gap]:
-    funcs = list(MANDATORY.values())
-    if enable_optional:
-        funcs += list(OPTIONAL.values())
+            enable_optional: bool = False, dq_findings=None) -> list[Gap]:
     gaps: list[Gap] = []
-    for fn in funcs:
+    for fn in MANDATORY.values():
         gaps.extend(fn(idx, typemap))
+    if enable_optional:
+        for fn in OPTIONAL.values():
+            gaps.extend(fn(idx, typemap))
+        gaps.extend(engines.run_g9(dq_findings))   # G9 from ingestion findings
     return gaps
 
 

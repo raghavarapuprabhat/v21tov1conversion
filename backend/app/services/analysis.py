@@ -23,9 +23,9 @@ class AnalysisResult:
 
 
 def analyze(v1: list[V1Field], v2: list[V2Field], typemap: TypeMap | None = None,
-            enable_optional: bool = False) -> AnalysisResult:
+            enable_optional: bool = False, dq_findings=None) -> AnalysisResult:
     idx = resolve_links(v1, v2)
-    gaps = run_all(idx, typemap, enable_optional=enable_optional)
+    gaps = run_all(idx, typemap, enable_optional=enable_optional, dq_findings=dq_findings)
     tree = build_v1_tree(v1)
     aggregate_gaps(tree, gaps)
     return AnalysisResult(idx=idx, gaps=gaps, tree=tree, summary=summarize(gaps))

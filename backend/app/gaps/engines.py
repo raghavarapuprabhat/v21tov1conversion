@@ -13,8 +13,8 @@ from app.gaps import severity as sev
 from app.gaps.gap_id import make_gap_id, v2_business_key
 from app.gaps.typemap import TypeMap
 from app.ingestion import normalize as N
-from app.models.canonical import Occurs
-from app.models.gap import Gap, GapType
+from app.models.canonical import Occurs, SourceRef
+from app.models.gap import Gap, GapType, Severity
 
 
 # --- helpers ------------------------------------------------------------------
@@ -166,7 +166,6 @@ def run_g4(idx: LinkIndex, _typemap: TypeMap | None = None) -> list[Gap]:
 # --- G5: reverse-orphan mapping (optional) ------------------------------------
 
 def run_g5(idx: LinkIndex, _typemap: TypeMap | None = None) -> list[Gap]:
-    from app.models.gap import Severity
     gaps: list[Gap] = []
     for lk in idx.orphan_links():
         gaps.append(Gap(
@@ -180,4 +179,98 @@ def run_g5(idx: LinkIndex, _typemap: TypeMap | None = None) -> list[Gap]:
             root_node=None, dd_ref=lk.v2.dd_ref,
             dd_in_v2=bool(lk.v2.dd_ref),     # DD comes from the V2.1 row itself
         ))
+    return gaps
+
+
+# --- G6: DD reference mismatch (optional) -------------------------------------
+
+def run_g6(idx: LinkIndex, _typemap: TypeMap | None = None) -> list[Gap]:
+    v2_dds = set(idx.v2_by_dd)
+    gaps: list[Gap] = []
+    for lk in idx.resolved_links():
+        if lk.v1.dd_ref and lk.v2.dd_ref and lk.v1.dd_ref != lk.v2.dd_ref:
+            gaps.append(Gap(
+                gap_id=make_gap_id(GapType.G6_DD_MISMATCH, lk.is_number, lk.context,
+                                   v2_business_key(lk.v2), "dd"),
+                gap_type=GapType.G6_DD_MISMATCH, is_number=lk.is_number,
+                mapping_context=lk.context, v1_path=_join_path(lk.v1.path),
+                v1_ref=lk.v1.source, v2_ref=lk.v2.source,
+                v1_value=lk.v1.dd_ref, v2_value=lk.v2.dd_ref,
+                detail=f"DD reference differs: V1 {lk.v1.dd_ref} vs V2 {lk.v2.dd_ref}",
+                severity=Severity.LOW,
+                root_node=lk.v1.path[0] if lk.v1.path else None, dd_ref=lk.v1.dd_ref,
+                dd_in_v2=bool(lk.v1.dd_ref in v2_dds)))
+    return gaps
+
+
+# --- G7: cardinality / scalar<->array divergence (optional) -------------------
+
+def run_g7(idx: LinkIndex, _typemap: TypeMap | None = None) -> list[Gap]:
+    v2_dds = set(idx.v2_by_dd)
+    gaps: list[Gap] = []
+    for lk in idx.resolved_links():
+        parent = resolve_parent_root(lk.v1, idx) or lk.v1
+        v1_arr = parent.max_occurs.is_array
+        v2_arr = lk.v2.max_occurs.is_array
+        if v1_arr != v2_arr:
+            gaps.append(Gap(
+                gap_id=make_gap_id(GapType.G7_CARDINALITY, lk.is_number, lk.context,
+                                   v2_business_key(lk.v2), "card"),
+                gap_type=GapType.G7_CARDINALITY, is_number=lk.is_number,
+                mapping_context=lk.context, v1_path=_join_path(lk.v1.path),
+                v1_ref=parent.source, v2_ref=lk.v2.source,
+                v1_value=f"{'array' if v1_arr else 'scalar'} (max={_fmt_max(parent.max_occurs)})",
+                v2_value=f"{'array' if v2_arr else 'scalar'} (max={_fmt_max(lk.v2.max_occurs)})",
+                detail="Cardinality divergence (scalar ↔ array)",
+                flags={"array_v1": v1_arr, "array_v2": v2_arr}, severity=Severity.HIGH,
+                root_node=lk.v1.path[0] if lk.v1.path else None, dd_ref=lk.v1.dd_ref,
+                dd_in_v2=bool(lk.v1.dd_ref and lk.v1.dd_ref in v2_dds)))
+    return gaps
+
+
+# --- G8: conflicting / duplicate mapping, context-aware (optional) ------------
+
+def run_g8(idx: LinkIndex, _typemap: TypeMap | None = None) -> list[Gap]:
+    from collections import defaultdict
+    v2_dds = set(idx.v2_by_dd)
+    groups: dict[tuple, list] = defaultdict(list)
+    for lk in idx.resolved_links():
+        groups[(lk.is_number, lk.context)].append(lk)
+    gaps: list[Gap] = []
+    for (isn, ctx), lks in groups.items():
+        if len(lks) > 1:                      # same IS+context mapped by >1 V2 row
+            v1 = lks[0].v1
+            gaps.append(Gap(
+                gap_id=make_gap_id(GapType.G8_DUP_MAPPING, isn, ctx, "", "dup"),
+                gap_type=GapType.G8_DUP_MAPPING, is_number=isn, mapping_context=ctx,
+                v1_path=_join_path(v1.path) if v1 else None,
+                v1_ref=v1.source if v1 else None, v2_ref=lks[0].v2.source,
+                v1_value=isn,
+                v2_value=f"{len(lks)} V2.1 rows map this IS in context {ctx.value}",
+                detail="Multiple V2.1 rows map to the same IS in the same context",
+                flags={"count": len(lks)}, severity=Severity.MEDIUM,
+                root_node=v1.path[0] if (v1 and v1.path) else None,
+                dd_ref=v1.dd_ref if v1 else None,
+                dd_in_v2=bool(v1 and v1.dd_ref and v1.dd_ref in v2_dds)))
+    return gaps
+
+
+# --- G9: data-quality findings from ingestion (optional) ----------------------
+
+_DQ_SEV = {"low": Severity.LOW, "medium": Severity.MEDIUM, "high": Severity.HIGH}
+
+
+def run_g9(dq_findings) -> list[Gap]:
+    gaps: list[Gap] = []
+    for i, f in enumerate(dq_findings or []):
+        ref = SourceRef(sheet=f.sheet, row=f.row) if f.row else None
+        gaps.append(Gap(
+            gap_id=make_gap_id(GapType.G9_DATA_QUALITY, f.raw or "", None,
+                               f.code, f"{f.sheet}:{f.row}:{i}"),
+            gap_type=GapType.G9_DATA_QUALITY,
+            is_number=f.raw if f.code == "DUPLICATE_IS" else None,
+            mapping_context=None, v1_ref=ref, v1_value=f.raw,
+            detail=f"[{f.code}] {f.message}", flags={"code": f.code},
+            severity=_DQ_SEV.get(f.severity, Severity.LOW),
+            root_node=None, dd_ref=None, dd_in_v2=False))
     return gaps

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { apiGet, apiSend } from './client'
+import { apiGet, apiSend, apiUpload } from './client'
 import type {
   Gap,
   GapConversation,
@@ -34,6 +34,15 @@ export interface Facets {
   is_numbers: string[]
   paths: string[]
 }
+
+export interface SheetGrid {
+  sheet: string
+  columns: string[]
+  rows: Record<string, string>[]
+}
+
+export const useSheet = (which: 'v1' | 'v2') =>
+  useQuery({ queryKey: ['sheet', which], queryFn: () => apiGet<SheetGrid>(`/sheets/${which}`) })
 
 export const useFacets = (type?: string) =>
   useQuery({
@@ -158,14 +167,39 @@ export function useSaveView() {
   })
 }
 
+export interface IngestReport {
+  v1_path: string
+  v2_path: string
+  v1_rows: number
+  v2_rows: number
+  reingest?: { comments_retained?: number; comments_orphaned?: number } | null
+}
+
+function invalidateAfterIngest(qc: ReturnType<typeof useQueryClient>) {
+  qc.invalidateQueries({ queryKey: ['summary'] })
+  qc.invalidateQueries({ queryKey: ['gaps'] })
+  qc.invalidateQueries({ queryKey: ['tree'] })
+  qc.invalidateQueries({ queryKey: ['facets'] })
+  qc.invalidateQueries({ queryKey: ['sheet'] })
+}
+
 export function useIngest() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: () => apiSend('/ingest', 'POST'),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['summary'] })
-      qc.invalidateQueries({ queryKey: ['gaps'] })
-      qc.invalidateQueries({ queryKey: ['tree'] })
+    onSuccess: () => invalidateAfterIngest(qc),
+  })
+}
+
+export function useIngestUpload() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (v: { v1?: File | null; v2?: File | null }) => {
+      const form = new FormData()
+      if (v.v1) form.append('v1', v.v1)
+      if (v.v2) form.append('v2', v.v2)
+      return apiUpload<IngestReport>('/ingest/upload', form)
     },
+    onSuccess: () => invalidateAfterIngest(qc),
   })
 }
