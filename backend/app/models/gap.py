@@ -19,6 +19,8 @@ class GapType(str, Enum):
     G7_CARDINALITY = "G7_CARDINALITY"         # optional
     G8_DUP_MAPPING = "G8_DUP_MAPPING"         # optional
     G9_DATA_QUALITY = "G9_DATA_QUALITY"       # optional
+    G10_DATA_LENGTH = "G10_DATA_LENGTH"       # placeholder — engine TBD
+    G11_LOV_VALUES = "G11_LOV_VALUES"         # placeholder — engine TBD
 
 
 class GapStatus(str, Enum):

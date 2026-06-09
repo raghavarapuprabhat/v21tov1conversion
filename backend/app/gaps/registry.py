@@ -1,6 +1,7 @@
 """Gap engine registry + summary (LLD v1.2 §5, Plan T-E3.1)."""
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from typing import Optional
 
@@ -85,5 +86,11 @@ def summarize(gaps: list[Gap], disabled: Optional[set[str]] = None) -> list[GapS
     for t in off:
         if t not in present:
             out.append(GapSummary(gap_type=t, total=0, disabled=True))
-    out.sort(key=lambda s: s.gap_type)
+    out.sort(key=lambda s: _gap_order(s.gap_type))
     return out
+
+
+def _gap_order(gap_type: str) -> tuple[int, str]:
+    """Numeric by the G<n> code so G10/G11 follow G9 instead of sorting after G1."""
+    m = re.match(r"G(\d+)", gap_type)
+    return (int(m.group(1)) if m else 999, gap_type)

@@ -13,6 +13,8 @@ export type GapType =
   | 'G7_CARDINALITY'
   | 'G8_DUP_MAPPING'
   | 'G9_DATA_QUALITY'
+  | 'G10_DATA_LENGTH'
+  | 'G11_LOV_VALUES'
 
 export interface SourceRef {
   sheet: string
@@ -133,6 +135,8 @@ export const GAP_LABELS: Record<GapType, string> = {
   G7_CARDINALITY: 'Cardinality',
   G8_DUP_MAPPING: 'Duplicate mapping',
   G9_DATA_QUALITY: 'Data quality',
+  G10_DATA_LENGTH: 'Data Length',
+  G11_LOV_VALUES: 'LOV Values',
 }
 
 export const GAP_CODE: Record<GapType, string> = {
@@ -145,4 +149,6 @@ export const GAP_CODE: Record<GapType, string> = {
   G7_CARDINALITY: 'G7',
   G8_DUP_MAPPING: 'G8',
   G9_DATA_QUALITY: 'G9',
+  G10_DATA_LENGTH: 'G10',
+  G11_LOV_VALUES: 'G11',
 }
