@@ -109,3 +109,10 @@ def test_optional_engines_g6_g8_g9():
     assert GapType.G8_DUP_MAPPING in types       # 2 rows, same IS+context
     g9 = [g for g in res.gaps if g.gap_type == GapType.G9_DATA_QUALITY]
     assert len(g9) == 1 and "SENTINEL_CASING" in g9[0].detail
+
+    # G6 is now MANDATORY: it fires even with optional engines off; G8 does not.
+    off = analyze(v1, v2, TypeMap.load(TYPEMAP), enable_optional=False, dq_findings=findings)
+    off_types = [g.gap_type for g in off.gaps]
+    assert GapType.G6_DD_MISMATCH in off_types
+    assert GapType.G8_DUP_MAPPING not in off_types
+    assert GapType.G9_DATA_QUALITY not in off_types

@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     V2_PATH: str = "../v2.1.xlsx"
 
     # Gap analysis
-    ENABLE_OPTIONAL_GAPS: bool = False           # toggles G5..G9
+    ENABLE_OPTIONAL_GAPS: bool = False           # toggles G5, G7, G8, G9
     # engines off; cards still shown "Disabled" (G10/G11 logic to be written later)
     DISABLED_GAPS: list[str] = ["G2_OCCURRENCE", "G10_DATA_LENGTH", "G11_LOV_VALUES"]
     TYPE_MAP_PATH: str = "./config/type_equivalence.yaml"

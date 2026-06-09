@@ -15,7 +15,7 @@ class GapType(str, Enum):
     G3_DATATYPE = "G3_DATATYPE"
     G4_MANDATORY = "G4_MANDATORY"
     G5_REVERSE_ORPHAN = "G5_REVERSE_ORPHAN"   # optional
-    G6_DD_MISMATCH = "G6_DD_MISMATCH"         # optional
+    G6_DD_MISMATCH = "G6_DD_MISMATCH"         # mandatory
     G7_CARDINALITY = "G7_CARDINALITY"         # optional
     G8_DUP_MAPPING = "G8_DUP_MAPPING"         # optional
     G9_DATA_QUALITY = "G9_DATA_QUALITY"       # optional

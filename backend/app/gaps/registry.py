@@ -17,13 +17,13 @@ MANDATORY = {
     GapType.G2_OCCURRENCE: engines.run_g2,
     GapType.G3_DATATYPE: engines.run_g3,
     GapType.G4_MANDATORY: engines.run_g4,
+    GapType.G6_DD_MISMATCH: engines.run_g6,
 }
 
 # Optional engines that take (idx, typemap). G9 is handled separately because it
 # consumes the ingestion data-quality findings rather than the link index.
 OPTIONAL = {
     GapType.G5_REVERSE_ORPHAN: engines.run_g5,
-    GapType.G6_DD_MISMATCH: engines.run_g6,
     GapType.G7_CARDINALITY: engines.run_g7,
     GapType.G8_DUP_MAPPING: engines.run_g8,
 }

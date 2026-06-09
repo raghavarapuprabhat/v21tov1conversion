@@ -94,6 +94,14 @@ def test_g2_disabled_card_present_but_empty(client):
     assert by_type["G1_COVERAGE"]["disabled"] is False
 
 
+def test_placeholder_disabled_cards_present(client):
+    by_type = {s["gap_type"]: s for s in client.get("/api/summary").json()}
+    for t in ("G10_DATA_LENGTH", "G11_LOV_VALUES"):
+        assert t in by_type, f"{t} card missing"
+        assert by_type[t]["disabled"] is True
+        assert by_type[t]["total"] == 0
+
+
 def test_facets(client):
     f = client.get("/api/facets", params={"type": "G1_COVERAGE"}).json()
     assert set(f["is_numbers"]) == {"IS1", "IS2", "IS3", "IS4"}

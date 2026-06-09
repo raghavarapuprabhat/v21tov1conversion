@@ -183,7 +183,7 @@ def run_g5(idx: LinkIndex, _typemap: TypeMap | None = None) -> list[Gap]:
     return gaps
 
 
-# --- G6: DD reference mismatch (optional) -------------------------------------
+# --- G6: DD reference mismatch (mandatory) -----------------------------------
 
 def run_g6(idx: LinkIndex, _typemap: TypeMap | None = None) -> list[Gap]:
     v2_dds = set(idx.v2_by_dd)
