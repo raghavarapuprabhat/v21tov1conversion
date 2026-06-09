@@ -51,6 +51,7 @@ export interface GapSummary {
   by_status: Record<string, number>
   by_severity: Record<string, number>
   metrics?: G1Metrics | null
+  disabled?: boolean
 }
 
 export interface GapPage {

@@ -4,7 +4,7 @@ Pure/deterministic; persistence (E5) and the API (E8) build on top of this.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from app.domain.linkage import LinkIndex, resolve_links
 from app.domain.tree import TreeNode, aggregate_gaps, build_v1_tree
@@ -20,12 +20,17 @@ class AnalysisResult:
     gaps: list[Gap]
     tree: TreeNode
     summary: list[GapSummary]
+    disabled: set[str] = field(default_factory=set)
 
 
 def analyze(v1: list[V1Field], v2: list[V2Field], typemap: TypeMap | None = None,
-            enable_optional: bool = False, dq_findings=None) -> AnalysisResult:
+            enable_optional: bool = False, dq_findings=None,
+            disabled: set[str] | None = None) -> AnalysisResult:
+    off = disabled or set()
     idx = resolve_links(v1, v2)
-    gaps = run_all(idx, typemap, enable_optional=enable_optional, dq_findings=dq_findings)
+    gaps = run_all(idx, typemap, enable_optional=enable_optional,
+                   dq_findings=dq_findings, disabled=off)
     tree = build_v1_tree(v1)
     aggregate_gaps(tree, gaps)
-    return AnalysisResult(idx=idx, gaps=gaps, tree=tree, summary=summarize(gaps))
+    return AnalysisResult(idx=idx, gaps=gaps, tree=tree,
+                          summary=summarize(gaps, off), disabled=off)

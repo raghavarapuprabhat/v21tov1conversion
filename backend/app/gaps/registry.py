@@ -29,14 +29,21 @@ OPTIONAL = {
 
 
 def run_all(idx: LinkIndex, typemap: Optional[TypeMap] = None,
-            enable_optional: bool = False, dq_findings=None) -> list[Gap]:
+            enable_optional: bool = False, dq_findings=None,
+            disabled: Optional[set[str]] = None) -> list[Gap]:
+    off = disabled or set()
     gaps: list[Gap] = []
-    for fn in MANDATORY.values():
+    for gt, fn in MANDATORY.items():
+        if gt.value in off:
+            continue
         gaps.extend(fn(idx, typemap))
     if enable_optional:
-        for fn in OPTIONAL.values():
+        for gt, fn in OPTIONAL.items():
+            if gt.value in off:
+                continue
             gaps.extend(fn(idx, typemap))
-        gaps.extend(engines.run_g9(dq_findings))   # G9 from ingestion findings
+        if GapType.G9_DATA_QUALITY.value not in off:
+            gaps.extend(engines.run_g9(dq_findings))   # G9 from ingestion findings
     return gaps
 
 
@@ -46,9 +53,10 @@ class GapSummary(BaseModel):
     by_status: dict[str, int] = Field(default_factory=dict)
     by_severity: dict[str, int] = Field(default_factory=dict)
     metrics: Optional[dict[str, int]] = None   # G1 A/B/C funnel
+    disabled: bool = False                      # engine turned off (card shown greyed)
 
 
-def summarize(gaps: list[Gap]) -> list[GapSummary]:
+def summarize(gaps: list[Gap], disabled: Optional[set[str]] = None) -> list[GapSummary]:
     by_type: dict[str, dict] = defaultdict(
         lambda: {"total": 0, "status": defaultdict(int), "sev": defaultdict(int)}
     )
@@ -63,12 +71,19 @@ def summarize(gaps: list[Gap]) -> list[GapSummary]:
             g1["nullable_false"] += int(bool(g.flags.get("nullable_false")))
             g1["parent_min1"] += int(bool(g.flags.get("parent_root_min_occurs_1")))
 
+    off = disabled or set()
     out: list[GapSummary] = []
     for t, d in by_type.items():
         out.append(GapSummary(
             gap_type=t, total=d["total"],
             by_status=dict(d["status"]), by_severity=dict(d["sev"]),
             metrics=g1 if t == GapType.G1_COVERAGE.value else None,
+            disabled=t in off,
         ))
+    # keep disabled cards visible even though their engine produced no gaps
+    present = {s.gap_type for s in out}
+    for t in off:
+        if t not in present:
+            out.append(GapSummary(gap_type=t, total=0, disabled=True))
     out.sort(key=lambda s: s.gap_type)
     return out

@@ -82,6 +82,18 @@ def test_g1_nullable_field_and_filter(client):
     assert nullable.json()["rows"][0]["is_number"] == "IS4"
 
 
+def test_g2_disabled_card_present_but_empty(client):
+    by_type = {s["gap_type"]: s for s in client.get("/api/summary").json()}
+    # the G2 card is still listed, flagged disabled, with no gaps
+    assert "G2_OCCURRENCE" in by_type
+    assert by_type["G2_OCCURRENCE"]["disabled"] is True
+    assert by_type["G2_OCCURRENCE"]["total"] == 0
+    # and the engine produced nothing
+    assert client.get("/api/gaps", params={"type": "G2_OCCURRENCE"}).json()["total"] == 0
+    # other cards are not disabled
+    assert by_type["G1_COVERAGE"]["disabled"] is False
+
+
 def test_facets(client):
     f = client.get("/api/facets", params={"type": "G1_COVERAGE"}).json()
     assert set(f["is_numbers"]) == {"IS1", "IS2", "IS3", "IS4"}

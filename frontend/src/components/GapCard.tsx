@@ -3,6 +3,29 @@ import { GAP_CODE, GAP_LABELS } from '../types'
 
 export default function GapCard({ s, onClick }: { s: GapSummary; onClick: () => void }) {
   const open = s.by_status['Open'] ?? 0
+
+  if (s.disabled) {
+    return (
+      <div
+        aria-disabled
+        title="This gap engine is currently disabled"
+        className="flex w-full cursor-not-allowed flex-col rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-left opacity-70"
+      >
+        <div className="flex items-center justify-between">
+          <span className="rounded-md bg-slate-200 px-2 py-0.5 text-xs font-bold text-slate-500">
+            {GAP_CODE[s.gap_type]}
+          </span>
+          <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+            Disabled
+          </span>
+        </div>
+        <h3 className="mt-2 text-sm font-semibold text-slate-500">{GAP_LABELS[s.gap_type]}</h3>
+        <p className="mt-3 text-xs text-slate-400">Engine turned off — logic under review.</p>
+        <div className="mt-4 border-t border-slate-200 pt-3 text-xs text-slate-400">Not evaluated</div>
+      </div>
+    )
+  }
+
   return (
     <button
       onClick={onClick}

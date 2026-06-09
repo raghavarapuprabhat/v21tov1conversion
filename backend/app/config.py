@@ -21,6 +21,7 @@ class Settings(BaseSettings):
 
     # Gap analysis
     ENABLE_OPTIONAL_GAPS: bool = False           # toggles G5..G9
+    DISABLED_GAPS: list[str] = ["G2_OCCURRENCE"]  # engines off; card shown "Disabled"
     TYPE_MAP_PATH: str = "./config/type_equivalence.yaml"
     MANDATORY_CONVENTION: str = "nullable_false_is_mandatory"  # CONFIRMED (D2)
     G1_COVERAGE_SCOPE: str = "any_context"       # any_context | per_context

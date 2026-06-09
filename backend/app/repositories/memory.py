@@ -32,6 +32,7 @@ class InMemoryRepository:
         self._v2_by_dd: dict[str, list[V2Field]] = {}
         self._v1: list = []
         self._v2: list = []
+        self._disabled: set[str] = set()
 
     # --- dataset --------------------------------------------------------------
     def load(self, v1, v2, result) -> ReingestSummary:
@@ -41,6 +42,7 @@ class InMemoryRepository:
         self._order = [g.gap_id for g in result.gaps]
         self._tree = result.tree
         self._v2_by_dd = result.idx.v2_by_dd
+        self._disabled = set(getattr(result, "disabled", set()) or set())
         # Re-apply persisted statuses onto the freshly computed gaps (by gap_id)
         for gid, status in self.snap.all_statuses().items():
             g = self._gaps.get(gid)
@@ -59,7 +61,7 @@ class InMemoryRepository:
         return summary
 
     def _refresh_summary(self) -> None:
-        self._summary = summarize(list(self._gaps.values()))
+        self._summary = summarize(list(self._gaps.values()), self._disabled)
 
     # --- queries --------------------------------------------------------------
     def summary(self) -> list[GapSummary]:
