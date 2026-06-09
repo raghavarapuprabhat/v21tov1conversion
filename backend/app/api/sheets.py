@@ -9,12 +9,14 @@ from __future__ import annotations
 import io
 from typing import Any, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from app.config import settings
+from app.deps import get_repo
 from app.ingestion.excel_loader import IngestionError
+from app.repositories.base import Repository
 from app.ingestion.raw_sheet import (
     read_v1_grid,
     read_v1_row,
@@ -42,6 +44,12 @@ def sheet_v2() -> dict:
         return read_v2_grid(settings.V2_PATH)
     except IngestionError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
+
+
+@router.get("/sheets/v1/gap-index")
+def v1_gap_index(repo: Repository = Depends(get_repo)) -> dict:
+    """{ "<v1_row>": {"count": n, "open": m} } for the Gap column + highlighting."""
+    return repo.v1_gap_index()
 
 
 @router.get("/sheets/v1/row/{row}")

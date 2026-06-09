@@ -68,6 +68,27 @@ def test_fetch_missing_row_is_404(client):
     assert client.get("/api/sheets/v1/row/99999").status_code == 404
 
 
+def test_v1_gap_index_and_row_gaps(client):
+    idx = client.get("/api/sheets/v1/gap-index").json()
+    assert idx, "expected some V1 rows to carry gaps"
+    # each entry is {count, open}; counts are positive
+    assert all(v["count"] >= 1 and "open" in v for v in idx.values())
+    # the gaps anchored to a flagged row are fetchable by v1_row, and agree on count
+    row = next(iter(idx))
+    g = client.get("/api/gaps", params={"v1_row": int(row)}).json()
+    assert g["total"] == idx[row]["count"]
+    assert all(r["v1_ref"]["row"] == int(row) for r in g["rows"])
+
+
+def test_v1_gap_index_reflects_status_changes(client):
+    idx = client.get("/api/sheets/v1/gap-index").json()
+    row = next(r for r, v in idx.items() if v["open"] > 0)
+    gap_id = client.get("/api/gaps", params={"v1_row": int(row)}).json()["rows"][0]["gap_id"]
+    client.patch(f"/api/gaps/{gap_id}/status", json={"status": "Accepted", "author": "t"})
+    after = client.get("/api/sheets/v1/gap-index").json()
+    assert after[row]["open"] == idx[row]["open"] - 1   # one fewer open on that row
+
+
 def test_v2_download_applies_edits(client):
     g = client.get("/api/sheets/v2").json()
     cols = g["columns"]

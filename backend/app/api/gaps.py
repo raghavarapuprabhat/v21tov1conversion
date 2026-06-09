@@ -67,6 +67,7 @@ def list_gaps(
     dd: Optional[str] = Query(None),
     dd_in_v2: Optional[bool] = Query(None),
     nullable: Optional[bool] = Query(None),
+    v1_row: Optional[int] = Query(None),
     root: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
     sort: Optional[str] = Query(None),
@@ -78,7 +79,7 @@ def list_gaps(
                  is_number=is_number, is_in=is_in, path_in=path_in,
                  is_not_in=is_not_in, path_not_in=path_not_in,
                  v1=v1, v2=v2, detail=detail, dd=dd, dd_in_v2=dd_in_v2,
-                 nullable=nullable, root_node=root, search=search, sort=sort,
+                 nullable=nullable, v1_row=v1_row, root_node=root, search=search, sort=sort,
                  page=page, page_size=page_size)
     return repo.query_gaps(q)
 

@@ -57,6 +57,17 @@ export const useSheetRow = (which: 'v1' | 'v2', row: number | null | undefined) 
     enabled: row != null,
   })
 
+export interface V1GapEntry {
+  count: number
+  open: number
+}
+
+export const useV1GapIndex = () =>
+  useQuery({
+    queryKey: ['v1-gap-index'],
+    queryFn: () => apiGet<Record<string, V1GapEntry>>('/sheets/v1/gap-index'),
+  })
+
 export const useFacets = (type?: string) =>
   useQuery({
     queryKey: ['facets', type],
@@ -84,6 +95,7 @@ export interface GapsParams {
   dd?: string
   dd_in_v2?: string
   nullable?: string
+  v1_row?: number
   root?: string
   search?: string
   sort?: string
@@ -136,6 +148,7 @@ export function useSetStatus() {
       qc.invalidateQueries({ queryKey: ['gaps'] })
       qc.invalidateQueries({ queryKey: ['summary'] })
       qc.invalidateQueries({ queryKey: ['history'] })
+      qc.invalidateQueries({ queryKey: ['v1-gap-index'] })
     },
   })
 }
@@ -153,6 +166,7 @@ export function useBulkStatus() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['gaps'] })
       qc.invalidateQueries({ queryKey: ['summary'] })
+      qc.invalidateQueries({ queryKey: ['v1-gap-index'] })
     },
   })
 }
@@ -196,6 +210,7 @@ function invalidateAfterIngest(qc: ReturnType<typeof useQueryClient>) {
   qc.invalidateQueries({ queryKey: ['tree'] })
   qc.invalidateQueries({ queryKey: ['facets'] })
   qc.invalidateQueries({ queryKey: ['sheet'] })
+  qc.invalidateQueries({ queryKey: ['v1-gap-index'] })
 }
 
 export function useIngest() {

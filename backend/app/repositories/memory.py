@@ -98,6 +98,19 @@ class InMemoryRepository:
                 paths.add(g.v1_path)
         return {"is_numbers": sorted(iss), "paths": sorted(paths)}
 
+    def v1_gap_index(self) -> dict:
+        """Map each V1 source row -> {count, open} for the V1 sheet's Gap column
+        and row highlighting. One pass over the gaps."""
+        idx: dict[str, dict] = {}
+        for g in self._gaps.values():
+            if g.v1_ref is None or g.v1_ref.row is None:
+                continue
+            e = idx.setdefault(str(g.v1_ref.row), {"count": 0, "open": 0})
+            e["count"] += 1
+            if g.status == GapStatus.OPEN:
+                e["open"] += 1
+        return idx
+
     @staticmethod
     def _match(g: Gap, q: GapQuery) -> bool:
         ctx = g.mapping_context.value if g.mapping_context else None
@@ -117,6 +130,8 @@ class InMemoryRepository:
         if q.dd_in_v2 is not None and g.dd_in_v2 != q.dd_in_v2:
             return False
         if q.nullable is not None and g.nullable != q.nullable:
+            return False
+        if q.v1_row is not None and (g.v1_ref is None or g.v1_ref.row != q.v1_row):
             return False
         if q.root_node and g.root_node != q.root_node:
             return False
