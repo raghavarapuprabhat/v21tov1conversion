@@ -94,6 +94,13 @@ class SnapshotStore:
         )
         return [dict(r) for r in cur.fetchall()]
 
+    def all_history(self) -> list[dict]:
+        cur = self._conn.execute(
+            "SELECT gap_id, old_status, new_status, author, note, changed_at "
+            "FROM status_history ORDER BY changed_at, id",
+        )
+        return [dict(r) for r in cur.fetchall()]
+
     # --- comments -------------------------------------------------------------
     def add_comment(self, c: dict) -> None:
         self._conn.execute(
@@ -113,6 +120,10 @@ class SnapshotStore:
     def comments_for_anchor(self, is_anchor: str) -> list[dict]:
         cur = self._conn.execute(
             "SELECT * FROM comment WHERE is_anchor=? ORDER BY created_at", (is_anchor,))
+        return [dict(r) for r in cur.fetchall()]
+
+    def all_comments(self) -> list[dict]:
+        cur = self._conn.execute("SELECT * FROM comment ORDER BY created_at")
         return [dict(r) for r in cur.fetchall()]
 
     def detach_gap(self, gap_id: str) -> None:

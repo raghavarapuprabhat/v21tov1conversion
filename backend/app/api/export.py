@@ -1,15 +1,17 @@
-"""CSV export of the current gap filter (LLD §7, §11.3 T-E11.4 server side)."""
+"""CSV export of the current gap filter + MoM export (LLD §7, §11.3 T-E11.4)."""
 from __future__ import annotations
 
 import csv
 import io
+from datetime import date
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import Response, StreamingResponse
 
 from app.deps import get_repo
 from app.repositories.base import GapQuery, Repository
+from app.services import mom as mom_svc
 
 router = APIRouter(tags=["export"])
 
@@ -63,4 +65,49 @@ def export_gaps(
         iter([buf.getvalue()]),
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=gaps.csv"},
+    )
+
+
+# --- MoM (Minutes of Meeting) export -----------------------------------------
+
+def _mom_range(d_from: date, d_to: date) -> tuple[date, date]:
+    if d_from > d_to:
+        raise HTTPException(status_code=400, detail="'from' date must be on or before 'to' date")
+    return d_from, d_to
+
+
+@router.get("/export/mom.json")
+def mom_preview(
+    from_: date = Query(..., alias="from"),
+    to: date = Query(...),
+    repo: Repository = Depends(get_repo),
+):
+    """Structured MoM activity for the date range — drives the export preview."""
+    d_from, d_to = _mom_range(from_, to)
+    return mom_svc.collect(repo, d_from, d_to)
+
+
+_MOM_MEDIA = {"html": "text/html", "md": "text/markdown", "csv": "text/csv"}
+
+
+@router.get("/export/mom")
+def mom_export(
+    from_: date = Query(..., alias="from"),
+    to: date = Query(...),
+    format: str = Query("html", pattern="^(html|md|csv)$"),
+    repo: Repository = Depends(get_repo),
+):
+    """Download the MoM document (HTML / Markdown / CSV) for the date range."""
+    d_from, d_to = _mom_range(from_, to)
+    report = mom_svc.collect(repo, d_from, d_to)
+    body = {
+        "html": mom_svc.render_html,
+        "md": mom_svc.render_markdown,
+        "csv": mom_svc.render_csv,
+    }[format](report)
+    name = mom_svc.filename(report, format)
+    return Response(
+        content=body,
+        media_type=_MOM_MEDIA[format],
+        headers={"Content-Disposition": f"attachment; filename={name}"},
     )

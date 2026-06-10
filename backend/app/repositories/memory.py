@@ -231,6 +231,12 @@ class InMemoryRepository:
     def list_comments(self, gap_id: str) -> list[Comment]:
         return [Comment(**r) for r in self.snap.comments_for_gap(gap_id)]
 
+    def all_comments(self) -> list[dict]:
+        return self.snap.all_comments()
+
+    def all_status_changes(self) -> list[dict]:
+        return self.snap.all_history()
+
     def conversation_parts(self, gap_id: str) -> tuple[list[Comment], list[Comment]]:
         """(thread, earlier_for_is) — F13 retention retrieval (LLD §8.4).
 

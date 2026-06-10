@@ -68,6 +68,47 @@ export const useV1GapIndex = () =>
     queryFn: () => apiGet<Record<string, V1GapEntry>>('/sheets/v1/gap-index'),
   })
 
+export interface MomEvent {
+  kind: 'comment' | 'decision'
+  when: string
+  author: string
+  text?: string
+  is_reply?: boolean
+  is_number?: string | null
+  gap_type?: string | null
+  mapping_context?: string | null
+  path?: string | null
+  detail?: string | null
+  old_status?: string | null
+  new_status?: string | null
+  note?: string | null
+}
+
+export interface MomAttribute {
+  is_number: string | null
+  path: string | null
+  detail: string | null
+  events: MomEvent[]
+}
+
+export interface MomReport {
+  from: string
+  to: string
+  generated_at: string
+  totals: { decisions: number; comments: number; attributes: number; participants: number }
+  participants: string[]
+  attributes: MomAttribute[]
+  decisions: MomEvent[]
+  events: MomEvent[]
+}
+
+export const useMomPreview = (from: string, to: string) =>
+  useQuery({
+    queryKey: ['mom', from, to],
+    queryFn: () => apiGet<MomReport>(`/export/mom.json?from=${from}&to=${to}`),
+    enabled: !!from && !!to && from <= to,
+  })
+
 export const useFacets = (type?: string) =>
   useQuery({
     queryKey: ['facets', type],

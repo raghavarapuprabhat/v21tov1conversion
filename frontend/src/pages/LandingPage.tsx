@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import { useSummary } from '../api/queries'
 import GapCard from '../components/GapCard'
 import UploadModal from '../components/UploadModal'
+import MomExportModal from '../components/MomExportModal'
 
 export default function LandingPage() {
   const summary = useSummary()
   const navigate = useNavigate()
   const [uploadOpen, setUploadOpen] = useState(false)
+  const [momOpen, setMomOpen] = useState(false)
 
   const total = summary.data?.reduce((a, s) => a + s.total, 0) ?? 0
 
@@ -21,15 +23,24 @@ export default function LandingPage() {
             click a card to review
           </p>
         </div>
-        <button
-          onClick={() => setUploadOpen(true)}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
-        >
-          Upload Excel
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setMomOpen(true)}
+            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+          >
+            Export MoM
+          </button>
+          <button
+            onClick={() => setUploadOpen(true)}
+            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+          >
+            Upload Excel
+          </button>
+        </div>
       </div>
 
       {uploadOpen && <UploadModal onClose={() => setUploadOpen(false)} />}
+      {momOpen && <MomExportModal onClose={() => setMomOpen(false)} />}
 
       {summary.isError && (
         <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
