@@ -53,10 +53,26 @@ def test_mom_html_download(client):
     assert "Minutes of Meeting" in r.text and "Accepted" in r.text and "Keep mandatory" in r.text
 
 
-def test_mom_csv_and_md(client):
+def test_mom_csv_groups_comments_per_attribute(client):
+    import csv as _csv
+    import io as _io
+    gid = client.get("/api/gaps", params={"type": "G1_COVERAGE"}).json()["rows"][0]["gap_id"]
+    # two comments on the same attribute should collapse into one row, comma-separated
+    client.post(f"/api/gaps/{gid}/comments", json={"author": "Alice", "body": "Keep mandatory"})
+    client.post(f"/api/gaps/{gid}/comments", json={"author": "Bob", "body": "Confirm with ops"})
+    client.patch(f"/api/gaps/{gid}/status", json={"status": "Accepted", "author": "Bob", "note": "Agreed"})
+
+    text = client.get("/api/export/mom", params={"from": TODAY, "to": TODAY, "format": "csv"}).text
+    rows = list(_csv.reader(_io.StringIO(text)))
+    assert rows[0] == ["attribute_is", "path", "detail", "gaps", "decisions", "comments", "participants"]
+    body = [r for r in rows[1:] if r and r[0] == "IS1"]
+    assert len(body) == 1                                  # one row for the attribute
+    comments_cell = body[0][5]
+    assert comments_cell == "Keep mandatory, Confirm with ops"   # no author prefix, comma-separated
+
+
+def test_mom_markdown(client):
     _seed(client)
-    csv_r = client.get("/api/export/mom", params={"from": TODAY, "to": TODAY, "format": "csv"})
-    assert "comment_or_note" in csv_r.text and "Keep mandatory" in csv_r.text
     md_r = client.get("/api/export/mom", params={"from": TODAY, "to": TODAY, "format": "md"})
     assert md_r.text.startswith("# Minutes of Meeting") and "| IS1 |" in md_r.text
 

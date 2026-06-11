@@ -196,22 +196,36 @@ def render_markdown(report: dict) -> str:
 # --- CSV ----------------------------------------------------------------------
 
 def render_csv(report: dict) -> str:
+    """One row per attribute; all of that attribute's comments collapsed into a
+    single comma-separated cell (decisions joined too), for a compact MoM sheet."""
     buf = io.StringIO()
     w = csv.writer(buf)
-    w.writerow(["date_time", "type", "attribute_is", "gap_type", "context",
-                "author", "old_status", "new_status", "detail", "comment_or_note"])
-    for e in report["events"]:
+    w.writerow(["attribute_is", "path", "detail", "gaps", "decisions",
+                "comments", "participants"])
+    for g in report["attributes"]:
+        evs = g["events"]
+        comments = [e for e in evs if e["kind"] == "comment"]
+        decisions = [e for e in evs if e["kind"] == "decision"]
+        gaps = sorted({e["gap_type"].split("_")[0] for e in evs if e.get("gap_type")})
+        participants = sorted({e["author"] for e in evs if e["author"] and e["author"] != "—"})
+
+        comment_cell = ", ".join(
+            e["text"].strip() for e in comments if e.get("text")
+        )
+        decision_cell = " | ".join(
+            f"{_decision_text(e)} ({e['author']}"
+            + (f": {e['note']}" if e.get("note") else "")
+            + ")"
+            for e in decisions
+        )
         w.writerow([
-            _fmt(e["ts"]),
-            e["kind"],
-            e.get("is_number") or "",
-            e.get("gap_type") or "",
-            e.get("mapping_context") or "",
-            e["author"],
-            e.get("old_status") or "",
-            e.get("new_status") or "",
-            e.get("detail") or "",
-            e.get("text") if e["kind"] == "comment" else (e.get("note") or ""),
+            g["is_number"] or GENERIC_KEY,
+            g.get("path") or "",
+            g.get("detail") or "",
+            ", ".join(gaps),
+            decision_cell,
+            comment_cell,
+            ", ".join(participants),
         ])
     return buf.getvalue()
 
